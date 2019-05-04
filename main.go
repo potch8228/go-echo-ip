@@ -36,13 +36,22 @@ func routerHandler(w http.ResponseWriter, r *http.Request) {
 
 func ipHandler(w http.ResponseWriter, r *http.Request) {
 	for k, v := range r.Header {
-		log.Printf("Header Key: %v = %v", k, v)
+		log.Printf("Header Key: %v = %v : (%t)", k, v, v)
 	}
 
-	ip := models.Ip{V4: "IPv4 address", V6: "IPv6 address"}
+	var err error
+	ip, err := models.MakeIp(r.Header.Get("X-Appengine-User-Ip"))
+	if err != nil {
+		msg := fmt.Sprintf("%v: %v", err, r.Header.Get("X-Appengine-User-Ip"))
+
+		log.SetOutput(os.Stderr)
+		log.Printf(msg)
+
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
 
 	var data []byte
-	var err error
 	if data, err = json.Marshal(ip); err != nil {
 		msg := fmt.Sprintf("Json Marshaling Failure: %v", err)
 
